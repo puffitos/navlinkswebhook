@@ -1,0 +1,41 @@
+{{- $altNames := list ( printf "%s.%s" (include "navlinkswebhook.fullname" .) .Release.Namespace ) ( printf "%s.%s.svc" (include "navlinkswebhook.fullname" .) .Release.Namespace ) -}}
+{{- $ca := genCA "navlinks-webhook-ca" 3650 -}}
+{{- $cert := genSignedCert ( include "navlinkswebhook.fullname" . ) nil $altNames 3650 $ca -}}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: {{ include "navlinkswebhook.fullname" . }}
+  labels:
+    {{- include "navlinkswebhook.labels" . | nindent 4 }}
+data:
+  tls.crt: {{ $cert.Cert | b64enc }}
+  tls.key: {{ $cert.Key | b64enc }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "navlinkswebhook.fullname" . }}
+webhooks:
+  - admissionReviewVersions:
+    - v1
+    name: {{ .Values.admission.webhook.name }}
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [{{ .Release.Namespace | default "default" }}{{- if .Values.admission.exclude }},{{ .Values.admission.exclude }}{{- end }}]
+    clientConfig:
+      service:
+        name: {{ include "navlinkswebhook.fullname" . }}
+        namespace: {{ .Release.Namespace | default "default" }}
+        path: "/validate"
+      caBundle: {{ $ca.Cert | b64enc }}
+    rules:
+      - operations: ["CREATE","UPDATE"]
+        apiGroups: ["monitoring.coreos.com"]
+        apiVersions: ["v1"]
+        resources: ["prometheus"]
+    failurePolicy: {{ .Values.admission.failurePolicy }}
+    sideEffects: {{ .Values.admission.sideEffects }}
