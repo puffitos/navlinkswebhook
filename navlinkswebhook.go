@@ -109,7 +109,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
-	_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlinks").Body(&nav).DoRaw(context.Background())
+	_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
 	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
 	//cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
 	//   BatchV1().Jobs(newRds.Namespace).Create(context.Context, nav, metav1.CreateOptions{})
