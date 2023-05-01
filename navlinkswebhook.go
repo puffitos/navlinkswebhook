@@ -115,7 +115,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	//_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
 	navlink := &cattlev1.NavLink{}
 	//err := nls.client.Create(context.TODO(), ns, &nav, navlink, metav1.CreateOptions{})
-	err := nls.client.Post().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.Background()).Into(navlink)
+	err := nls.client.Post().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.TODO()).Into(navlink)
 
 	//glog.Errorf("restresult %s", string(restresult))
 	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
