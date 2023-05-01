@@ -16,7 +16,10 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
+
+	"k8s.io/client-go/rest"
+	//"k8s.io/client-go/kubernetes"
+	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cattlev1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
@@ -33,7 +36,7 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	kubeClient kubernetes.Interface
+	kubeClient rest.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +109,9 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
-	_, err := nls.kubeClient.cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
+	_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlinks").Body(&nav).DoRaw(context.Background())
+	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
+	//cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
 	//   BatchV1().Jobs(newRds.Namespace).Create(context.Context, nav, metav1.CreateOptions{})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
