@@ -112,7 +112,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
 	//_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
-	err := nls.client.Create(context.TODO(), ns, &nav, &cattlev1.NavLink{}, metav1.CreateOptions{})
+	err := nls.client.Create(context.Background(), ns, &nav, &cattlev1.NavLink{}, metav1.CreateOptions{})
 
 	//glog.Errorf("restresult %s", string(restresult))
 	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
