@@ -4,6 +4,7 @@ import (
 
 	//"crypto"
 	//"crypto/ecdsa"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,11 +13,10 @@ import (
 	"github.com/golang/glog"
 	v1 "k8s.io/api/admission/v1"
 
-	//corev1 "k8s.io/api/core/v1"
-
-	// "k8s.io/client-go/kubernetes"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cattlev1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
@@ -28,13 +28,12 @@ const (
 )
 
 var (
-	healthy int32
-
 	owner = bool(true)
 )
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
+	kubeClient kubernetes.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -105,10 +104,22 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	createNavlinks(ns, "prometheus-operated", 9090)
+	nav := createNavlinks(ns, "prometheus-operated", 9090)
+
+	_, err := nls.kubeClient.cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
+	//   BatchV1().Jobs(newRds.Namespace).Create(context.Context, nav, metav1.CreateOptions{})
+	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			glog.Error("navlinks already exists for ", ns)
+			return
+		}
+		glog.Errorf("error creating navlinks: %v", err)
+		return
+	}
+
 	createNavlinks(ns, "alertmanager-operated", 9093)
 	createNavlinks(ns, "prometheus-monitoring-grafana", 80)
-	glog.Error("navlinks create done")
+	glog.Error("navlinks create done", nav)
 
 	resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create", &arRequest))
 	if err != nil {
