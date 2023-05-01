@@ -33,9 +33,9 @@ webhooks:
         path: "/validate"
       caBundle: {{ $ca.Cert | b64enc }}
     rules:
-      - operations: ["CREATE","UPDATE"]
+      - operations: ["CREATE"]
         apiGroups: ["monitoring.coreos.com"]
         apiVersions: ["v1"]
-        resources: ["prometheus"]
+        resources: ["prometheuses"]
     failurePolicy: {{ .Values.admission.failurePolicy }}
     sideEffects: {{ .Values.admission.sideEffects }}

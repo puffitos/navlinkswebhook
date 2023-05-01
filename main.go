@@ -25,12 +25,8 @@ const (
 var (
 	tlscert, tlskey string
 	opsProcessed    = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "cosign_processed_ops_total",
+		Name: "navlinks_processed_ops_total",
 		Help: "The total number of processed events",
-	})
-	verifiedProcessed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "cosign_processed_verified_total",
-		Help: "The number of verfified events",
 	})
 )
 

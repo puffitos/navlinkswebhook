@@ -8,7 +8,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o nav
 
 #FROM scratch
 FROM alpine:latest
-COPY --from=build-env /go/src/github.com/eumel8/navlinkswebhook .
+COPY --from=build-env /go/src/github.com/eumel8/navlinkswebhook/navlinkswebhook .
 COPY --from=build-env /etc/passwd /etc/passwd
 USER webhook
 ENTRYPOINT ["/navlinkswebhook"]
