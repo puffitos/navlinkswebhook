@@ -7,8 +7,8 @@ replicaCount: 1
 image:
   repository: mtr.devops.telekom.de/caas/navlinkswebhook
   #repository: ghcr.io/eumel8/navlinkswebhook/navlinkswebhook
-  pullPolicy: IfNotPresent
-  tag: 0.0.3
+  pullPolicy: Always
+  tag: 0.0.7
 
 imagePullSecrets: []
 nameOverride: ""

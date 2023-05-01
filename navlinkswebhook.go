@@ -4,6 +4,7 @@ import (
 
 	//"crypto"
 	//"crypto/ecdsa"
+
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,9 +18,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"k8s.io/client-go/rest"
 	//"k8s.io/client-go/kubernetes"
 	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
+	"github.com/rancher/lasso/pkg/client"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cattlev1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
@@ -36,7 +37,8 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	kubeClient rest.Interface
+	client *client.Client
+	//kubeClient rest.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -110,8 +112,9 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
 	//_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
-	restresult, err := nls.kubeClient.Get().Namespace(ns).Resource("pods").DoRaw(context.Background())
-	glog.Errorf("restresult %s", string(restresult))
+	err := nls.client.Create(context.TODO(), ns, &nav, &cattlev1.NavLink{}, metav1.CreateOptions{})
+
+	//glog.Errorf("restresult %s", string(restresult))
 	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
 	//cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
 	//   BatchV1().Jobs(newRds.Namespace).Create(context.Context, nav, metav1.CreateOptions{})
