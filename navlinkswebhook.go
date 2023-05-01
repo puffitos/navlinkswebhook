@@ -87,9 +87,9 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Error("error deserializing pod")
 		return
 	}
-	glog.Error("prom request", prom)
 
 	ns := prom.Namespace
+	glog.Error("prom namespace", ns)
 
 	if len(ns) == 0 {
 		glog.Errorf("No namespace found %s/%s", prom.Name, prom.Namespace)
@@ -108,6 +108,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	createNavlinks(ns, "prometheus-operated", 9090)
 	createNavlinks(ns, "alertmanager-operated", 9093)
 	createNavlinks(ns, "prometheus-monitoring-grafana", 80)
+	glog.Error("navlinks create done")
 
 	resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create", &arRequest))
 	if err != nil {
