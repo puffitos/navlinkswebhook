@@ -16,6 +16,7 @@ import (
 
 	// "k8s.io/client-go/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cattlev1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
@@ -88,7 +89,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	ns := prom.metadata.Namespace
+	ns := prom.Namespace
 
 	if len(ns) == 0 {
 		glog.Errorf("No namespace found %s/%s", prom.Name, prom.Namespace)
@@ -137,11 +138,12 @@ func createNavlinks(namespace string, service string, port int) cattlev1.NavLink
 		Spec: cattlev1.NavLinkSpec{
 			Target: "_blank",
 			Group:  "monitoring-" + namespace,
-			ToService: cattlev1.NavLinkTargetService{
-				Name:      service,
+			ToService: &cattlev1.NavLinkTargetService{
 				Namespace: namespace,
-				Port:      port,
+				Name:      service,
 				Scheme:    "http",
+				Port:      &intstr.IntOrString{IntVal: int32(port)},
+				Path:      "",
 			},
 			//Icon: prometheus,
 		},
