@@ -42,17 +42,6 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-            - name: healthz
-              containerPort: {{ .Values.service.metricPort }}
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: {{ .Values.service.metricPort }}
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: {{ .Values.service.metricPort }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

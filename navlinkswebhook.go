@@ -40,7 +40,6 @@ type NavlinksServerHandler struct {
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
-	return
 }
 
 func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +87,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Error("error deserializing pod")
 		return
 	}
+	glog.Error("prom request", prom)
 
 	ns := prom.Namespace
 
