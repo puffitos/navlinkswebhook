@@ -18,9 +18,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	//"k8s.io/client-go/kubernetes"
 	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
+	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
+	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
+	//uiv1 "github.com/rancher/rancher/pkg/generated/controllers/ui.cattle.io/v1"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -38,8 +41,12 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	//client *client.Client
-	client rest.Interface
+	RESTConfig        rest.Config
+	UnversionedClient rest.Interface
+	K8sClient         kubernetes.Interface
+	//client uiv1.Nav
+	//client rest.Interface
+
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -110,12 +117,27 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	/*
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
+		// creates the clientset
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err.Error())
+		}
+	*/
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
 	//_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
 	//navlink := &cattlev1.NavLink{}
 	//err := nls.client.Create(context.TODO(), ns, &nav, navlink, metav1.CreateOptions{})
-	err := nls.client.Post().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
+
+	err := nls.UnversionedClient.Post().Namespace(ns).Resource("navlinks").Body(&nav).Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
+	//.Create(context.Background(), &nav, metav1.CreateOptions{})
+	//s(ns).Create(context.Context, &nav, metav1.CreateOptions{})
+	//().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
 	//.Do(context.TODO()).Into(navlink)
 
 	//glog.Errorf("restresult %s", string(restresult))
