@@ -41,9 +41,9 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	RESTConfig        rest.Config
-	UnversionedClient rest.Interface
-	K8sClient         kubernetes.Interface
+	RESTConfig rest.Config
+	client     rest.Interface
+	K8sClient  kubernetes.Interface
 	//client uiv1.Nav
 	//client rest.Interface
 
@@ -134,7 +134,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	//navlink := &cattlev1.NavLink{}
 	//err := nls.client.Create(context.TODO(), ns, &nav, navlink, metav1.CreateOptions{})
 
-	err := nls.UnversionedClient.Post().Namespace(ns).Resource("navlinks").Body(&nav).Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
+	err := nls.client.Post().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.Background()).Error()
+
 	//.Create(context.Background(), &nav, metav1.CreateOptions{})
 	//s(ns).Create(context.Context, &nav, metav1.CreateOptions{})
 	//().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
