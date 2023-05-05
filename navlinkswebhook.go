@@ -44,9 +44,6 @@ type NavlinksServerHandler struct {
 	RESTConfig rest.Config
 	client     rest.Interface
 	K8sClient  kubernetes.Interface
-	//client uiv1.Nav
-	//client rest.Interface
-
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -134,17 +131,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	//navlink := &cattlev1.NavLink{}
 	//err := nls.client.Create(context.TODO(), ns, &nav, navlink, metav1.CreateOptions{})
 
-	err := nls.client.Post().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.Background()).Error()
+	err := nls.client.Post().Namespace(ns).Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
 
-	//.Create(context.Background(), &nav, metav1.CreateOptions{})
-	//s(ns).Create(context.Context, &nav, metav1.CreateOptions{})
-	//().Prefix("ui.cattle.io").Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
-	//.Do(context.TODO()).Into(navlink)
-
-	//glog.Errorf("restresult %s", string(restresult))
-	//UiV1().NavLinks(ns).Create(context.Context, &nav, metav1.CreateOptions{})
-	//cattlev1.NavLinks(ns).Create(context.Context, nav, metav1.CreateOptions{})
-	//   BatchV1().Jobs(newRds.Namespace).Create(context.Context, nav, metav1.CreateOptions{})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks already exists for ", ns)
