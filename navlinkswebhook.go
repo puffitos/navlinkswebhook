@@ -15,7 +15,9 @@ import (
 	v1 "k8s.io/api/admission/v1"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	//"k8s.io/client-go/kubernetes"
@@ -124,7 +126,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		panic(err.Error())
 	}
 
-	nav := createNavlinks(ns, "prometheus-operated", 9090)
+	nav := createNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID))
 
 	// err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
 
@@ -139,8 +141,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	createNavlinks(ns, "alertmanager-operated", 9093)
-	createNavlinks(ns, "prometheus-monitoring-grafana", 80)
+	//createNavlinks(ns, "alertmanager-operated", "9093")
+	//createNavlinks(ns, "prometheus-monitoring-grafana", "80")
 	glog.Error("navlinks create done", nav)
 
 	resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create", &arRequest))
@@ -155,7 +157,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	return
 }
 
-func createNavlinks(namespace string, service string, port int) uiv1.NavLink {
+func createNavlinks(namespace string, service string, port string, uid string) uiv1.NavLink {
 	return uiv1.NavLink{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "monitoring-" + namespace,
@@ -164,6 +166,8 @@ func createNavlinks(namespace string, service string, port int) uiv1.NavLink {
 				{
 					APIVersion:         "monitoring.coreos.com/v1",
 					Kind:               "Prometheus",
+					Name:               "valinkswebhook",
+					UID:                types.UID(uid),
 					Controller:         &owner,
 					BlockOwnerDeletion: &owner,
 				},
@@ -176,7 +180,7 @@ func createNavlinks(namespace string, service string, port int) uiv1.NavLink {
 				Namespace: namespace,
 				Name:      service,
 				Scheme:    "http",
-				Port:      &intstr.IntOrString{IntVal: int32(port)},
+				Port:      &intstr.IntOrString{Type: intstr.String, StrVal: port},
 				Path:      "",
 			},
 			//Icon: prometheus,
