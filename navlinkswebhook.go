@@ -18,6 +18,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	//"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	//"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/rest"
 	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
 	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
 	uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
@@ -37,7 +42,7 @@ var (
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
 	//RESTConfig rest.Config
-	client NavLinkInterface
+	//client NavLinkInterface
 	//K8sClient kubernetes.Interface
 }
 
@@ -108,22 +113,22 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-	/*
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			panic(err.Error())
-		}
-		// creates the clientset
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
-	*/
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset := NewForConfigOrDie(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
 	// err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
 
-	_, err := nls.client.Create(context.Background(), &nav, metav1.CreateOptions{})
+	_, err = clientset.Navlinks().Create(context.TODO(), &nav, metav1.CreateOptions{})
 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
