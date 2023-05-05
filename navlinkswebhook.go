@@ -42,8 +42,8 @@ var (
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
 	RESTConfig rest.Config
-	client     rest.Interface
-	K8sClient  kubernetes.Interface
+	//client     rest.Interface
+	K8sClient kubernetes.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -114,24 +114,19 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	/*
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			panic(err.Error())
-		}
-		// creates the clientset
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
-	*/
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
-	//_, err := nls.kubeClient.Post().Namespace(ns).Resource("navlink").Body(&nav).DoRaw(context.Background())
-	//navlink := &cattlev1.NavLink{}
-	//err := nls.client.Create(context.TODO(), ns, &nav, navlink, metav1.CreateOptions{})
-
-	err := nls.client.Post().Namespace(ns).Resource("navlinks").Body(&nav).Do(context.TODO()).Error()
+	err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
