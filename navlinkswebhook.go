@@ -20,14 +20,9 @@ import (
 
 	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
 	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
-	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
-	//uiv1 "github.com/rancher/rancher/pkg/generated/controllers/ui.cattle.io/v1"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	cattlev1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
 )
 
 const (
@@ -41,9 +36,9 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	RESTConfig rest.Config
-	//client     rest.Interface
-	K8sClient kubernetes.Interface
+	//RESTConfig rest.Config
+	client NavLinkInterface
+	//K8sClient kubernetes.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -113,20 +108,22 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
+	/*
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
+		// creates the clientset
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err.Error())
+		}
+	*/
 	nav := createNavlinks(ns, "prometheus-operated", 9090)
 
-	err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
+	// err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
+
+	_, err := nls.client.Create(context.TODO(), &nav, metav1.CreateOptions{})
 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -153,8 +150,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	return
 }
 
-func createNavlinks(namespace string, service string, port int) cattlev1.NavLink {
-	return cattlev1.NavLink{
+func createNavlinks(namespace string, service string, port int) uiv1.NavLink {
+	return uiv1.NavLink{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "monitoring-" + namespace,
 			Namespace: namespace,
@@ -167,10 +164,10 @@ func createNavlinks(namespace string, service string, port int) cattlev1.NavLink
 				},
 			},
 		},
-		Spec: cattlev1.NavLinkSpec{
+		Spec: uiv1.NavLinkSpec{
 			Target: "_blank",
 			Group:  "monitoring-" + namespace,
-			ToService: &cattlev1.NavLinkTargetService{
+			ToService: &uiv1.NavLinkTargetService{
 				Namespace: namespace,
 				Name:      service,
 				Scheme:    "http",
