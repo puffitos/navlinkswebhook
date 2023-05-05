@@ -123,7 +123,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 
 	// err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
 
-	_, err := nls.client.Create(context.TODO(), &nav, metav1.CreateOptions{})
+	_, err := nls.client.Create(context.Background(), &nav, metav1.CreateOptions{})
 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
