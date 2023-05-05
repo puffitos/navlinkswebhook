@@ -15,7 +15,7 @@ import (
 // NavLinksGetter has a method to return a NavLinkInterface.
 // A group's client should implement this interface.
 type NavLinksGetter interface {
-	NavLinks(namespace string) NavLinkInterface
+	NavLinks() NavLinkInterface
 }
 
 // NavLinkInterface has methods to work with NavLink resources.
@@ -35,14 +35,12 @@ type NavLinkInterface interface {
 // navlinks implements NavLinkInterface
 type navlinks struct {
 	client rest.Interface
-	ns     string
 }
 
 // newNavLinks returns a NavLinks
-func newNavLinks(c *UiV1Client, namespace string) *navlinks {
+func newNavLinks(c *UiV1Client) *navlinks {
 	return &navlinks{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -50,7 +48,6 @@ func newNavLinks(c *UiV1Client, namespace string) *navlinks {
 func (c *navlinks) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.NavLink, err error) {
 	result = &v1.NavLink{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("navlinks").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -67,7 +64,6 @@ func (c *navlinks) List(ctx context.Context, opts metav1.ListOptions) (result *v
 	}
 	result = &v1.NavLinkList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("navlinks").
 		VersionedParams(&opts, ParameterCodec).
 		Timeout(timeout).
@@ -84,7 +80,6 @@ func (c *navlinks) Watch(ctx context.Context, opts metav1.ListOptions) (watch.In
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("navlinks").
 		VersionedParams(&opts, ParameterCodec).
 		Timeout(timeout).
@@ -95,7 +90,6 @@ func (c *navlinks) Watch(ctx context.Context, opts metav1.ListOptions) (watch.In
 func (c *navlinks) Create(ctx context.Context, navlink *v1.NavLink, opts metav1.CreateOptions) (result *v1.NavLink, err error) {
 	result = &v1.NavLink{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("navlinks").
 		VersionedParams(&opts, ParameterCodec).
 		Body(navlink).
@@ -108,7 +102,6 @@ func (c *navlinks) Create(ctx context.Context, navlink *v1.NavLink, opts metav1.
 func (c *navlinks) Update(ctx context.Context, navlink *v1.NavLink, opts metav1.UpdateOptions) (result *v1.NavLink, err error) {
 	result = &v1.NavLink{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("navlinks").
 		Name(navlink.Name).
 		VersionedParams(&opts, ParameterCodec).
@@ -123,7 +116,6 @@ func (c *navlinks) Update(ctx context.Context, navlink *v1.NavLink, opts metav1.
 func (c *navlinks) UpdateStatus(ctx context.Context, navlink *v1.NavLink, opts metav1.UpdateOptions) (result *v1.NavLink, err error) {
 	result = &v1.NavLink{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("navlinks").
 		Name(navlink.Name).
 		SubResource("status").
@@ -137,7 +129,6 @@ func (c *navlinks) UpdateStatus(ctx context.Context, navlink *v1.NavLink, opts m
 // Delete takes name of the navlink and deletes it. Returns an error if one occurs.
 func (c *navlinks) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("navlinks").
 		Name(name).
 		Body(&opts).
@@ -152,7 +143,6 @@ func (c *navlinks) DeleteCollection(ctx context.Context, opts metav1.DeleteOptio
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("navlinks").
 		VersionedParams(&listOpts, ParameterCodec).
 		Timeout(timeout).
@@ -165,7 +155,6 @@ func (c *navlinks) DeleteCollection(ctx context.Context, opts metav1.DeleteOptio
 func (c *navlinks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.NavLink, err error) {
 	result = &v1.NavLink{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("navlinks").
 		Name(name).
 		SubResource(subresources...).

@@ -19,8 +19,8 @@ type UiV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *UiV1Client) Navlinks(namespace string) NavLinkInterface {
-	return newNavLinks(c, namespace)
+func (c *UiV1Client) Navlinks() NavLinkInterface {
+	return newNavLinks(c)
 }
 
 // NewForConfig creates a new UiV1Client for the given config.
