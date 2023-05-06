@@ -75,6 +75,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	prom := monitoringv1.Prometheus{}
 	if err := json.Unmarshal(raw, &prom); err != nil {
 		glog.Error("error deserializing pod")
+		nls.response(false, "Deserializing failed", w, &arRequest)
 		return
 	}
 
@@ -98,14 +99,14 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		glog.Error("cant get incluster config: ", err)
-		return
+		glog.Error("cant get InCluster config: ", err)
+		nls.response(false, "InCluster config failed", w, &arRequest)
 	}
 	// creates the clientset
 	clientset := NewForConfigOrDie(config)
 	if err != nil {
 		glog.Error("cant setup clientset: ", ns)
-		return
+		nls.response(false, "Setup clientset failed", w, &arRequest)
 	}
 
 	// check if navlink resource is available on api server
@@ -113,11 +114,11 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		glog.Error("navlinks resource not available: ", err)
-		return
+		nls.response(true, "Navlink resource not available, skill all", w, &arRequest)
 	}
 
 	// create navlink resource prometheus-operated
-	navPrometheus := createNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID))
+	navPrometheus := createNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID), logoPrometheus)
 	_, err = clientset.Navlinks().Create(context.TODO(), &navPrometheus, metav1.CreateOptions{})
 
 	if err != nil {
@@ -126,13 +127,13 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 			nls.response(true, "Navlink prometheus already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
-		return
+		nls.response(false, "Navlink prometheus creating failed", w, &arRequest)
 	}
 
 	glog.Error("navlinks created: ", navPrometheus.Name)
 
 	// create navlink resource alertmanager-operated
-	navAlertManager := createNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID))
+	navAlertManager := createNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID), logoAlertmanager)
 	_, err = clientset.Navlinks().Create(context.TODO(), &navAlertManager, metav1.CreateOptions{})
 
 	if err != nil {
@@ -141,12 +142,12 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 			nls.response(true, "Navlink alertmanager already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
-		return
+		nls.response(false, "Navlink alertmanager creating failed", w, &arRequest)
 	}
-	glog.Error("navlinks created: ", navAlertManager.Name)
+	glog.Info("navlinks created: ", navAlertManager.Name)
 
 	// create navlink resource prometheus-monitoring-grafana
-	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafana", "80", string(arRequest.Request.UID))
+	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
 	_, err = clientset.Navlinks().Create(context.TODO(), &navGrafana, metav1.CreateOptions{})
 
 	if err != nil {
@@ -155,7 +156,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 			nls.response(true, "Navlink grafana already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
-		return
+		nls.response(false, "Navlink grafana creating failed", w, &arRequest)
 	}
 	glog.Error("navlinks create done", navGrafana.Name)
 
@@ -163,17 +164,14 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		glog.Errorf("Can't encode response: %v", err)
 		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
-		return
 	}
 	if _, err := w.Write(resp); err != nil {
 		glog.Errorf("Can't write response: %v", err)
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
-		return
 	}
 }
 
 func (nls *NavlinksServerHandler) response(allowed bool, message string, w http.ResponseWriter, arRequest *v1.AdmissionReview) {
-
 	resp, err := json.Marshal(admissionResponse(200, allowed, "Success", message, arRequest))
 	if err != nil {
 		glog.Errorf("Can't encode response: %v", err)
