@@ -158,7 +158,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Errorf("error creating navlinks: %v", err)
 		nls.response(false, "Navlink grafana creating failed", w, &arRequest)
 	}
-	glog.Error("navlinks create done", navGrafana.Name)
+	glog.Info("navlinks created: ", navGrafana.Name)
 
 	resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create", &arRequest))
 	if err != nil {
