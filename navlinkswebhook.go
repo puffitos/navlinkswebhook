@@ -1,10 +1,6 @@
 package main
 
 import (
-
-	//"crypto"
-	//"crypto/ecdsa"
-
 	"context"
 	"encoding/json"
 	"fmt"
@@ -107,7 +103,6 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	}
 	// creates the clientset
 	clientset := NewForConfigOrDie(config)
-
 	if err != nil {
 		glog.Error("cant setup clientset: ", ns)
 		return
@@ -133,7 +128,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Errorf("error creating navlinks: %v", err)
 		return
 	}
-	glog.Error("navlinks create done", navPrometheus.Name)
+
+	glog.Error("navlinks created: ", navPrometheus.Name)
 
 	// create navlink resource alertmanager-operated
 	navAlertManager := createNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID))
@@ -142,15 +138,15 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks alertmanager already exists for ", ns)
-			return
+			response(true, "Navlinks existing, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
 	}
-	glog.Error("navlinks create done", navAlertManager.Name)
+	glog.Error("navlinks created: ", navAlertManager.Name)
 
 	// create navlink resource prometheus-monitoring-grafana
-	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafan", "80", string(arRequest.Request.UID))
+	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafana", "80", string(arRequest.Request.UID))
 	_, err = clientset.Navlinks().Create(context.TODO(), &navGrafana, metav1.CreateOptions{})
 
 	if err != nil {
@@ -167,10 +163,24 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		glog.Errorf("Can't encode response: %v", err)
 		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if _, err := w.Write(resp); err != nil {
+		glog.Errorf("Can't write response: %v", err)
+		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
+
+func response(allowed bool, message string, w http.ResponseWriter, arRequest *v1.AdmissionReview) {
+
+	resp, err := json.Marshal(admissionResponse(200, allowed, "Success", message, arRequest))
+	if err != nil {
+		glog.Errorf("Can't encode response: %v", err)
+		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
 	}
 	if _, err := w.Write(resp); err != nil {
 		glog.Errorf("Can't write response: %v", err)
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 	}
-	return
 }
