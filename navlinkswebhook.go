@@ -138,7 +138,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks alertmanager already exists for ", ns)
-			response(true, "Navlinks existing, skipped", w, &arRequest)
+			nls.response(true, "Navlinks existing, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
@@ -172,7 +172,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func response(allowed bool, message string, w http.ResponseWriter, arRequest *v1.AdmissionReview) {
+func (nls *NavlinksServerHandler) response(allowed bool, message string, w http.ResponseWriter, arRequest *v1.AdmissionReview) {
 
 	resp, err := json.Marshal(admissionResponse(200, allowed, "Success", message, arRequest))
 	if err != nil {
