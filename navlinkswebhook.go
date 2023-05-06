@@ -123,7 +123,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks prometheus already exists for ", ns)
-			return
+			nls.response(true, "Navlink prometheus already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
@@ -138,7 +138,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks alertmanager already exists for ", ns)
-			nls.response(true, "Navlinks existing, skipped", w, &arRequest)
+			nls.response(true, "Navlink alertmanager already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
@@ -152,7 +152,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			glog.Error("navlinks grafana already exists for ", ns)
-			return
+			nls.response(true, "Navlink grafana already exists, skipped", w, &arRequest)
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
