@@ -12,24 +12,12 @@ import (
 	"net/http"
 
 	"github.com/golang/glog"
-	v1 "k8s.io/api/admission/v1"
-
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	//"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	//"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
-	//kubernetes "github.com/rancher/rancher/pkg/generated/clientset/versioned/versioned"
-	//uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
-	uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
-
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	v1 "k8s.io/api/admission/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -43,9 +31,6 @@ var (
 
 // NavlinksServerHandler listen to admission requests and serve responses
 type NavlinksServerHandler struct {
-	//RESTConfig rest.Config
-	//client NavLinkInterface
-	//K8sClient kubernetes.Interface
 }
 
 func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +39,6 @@ func (nls *NavlinksServerHandler) healthz(w http.ResponseWriter, r *http.Request
 }
 
 func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) {
-
-	//kubeClientSet kubernetes.Interface
 
 	var body []byte
 	if r.Body != nil {
@@ -116,34 +99,69 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		glog.Error("cant get incluster config: ", err)
+		return
 	}
 	// creates the clientset
 	clientset := NewForConfigOrDie(config)
+
 	if err != nil {
-		panic(err.Error())
+		glog.Error("cant setup clientset: ", ns)
+		return
 	}
 
-	nav := createNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID))
+	// check if navlink resource is available on api server
+	_, err = clientset.Navlinks().List(context.Background(), metav1.ListOptions{})
 
-	// err = clientset.RESTClient().Post().Resource("ui.cattle.io.navlinks").Body(&nav).Do(context.TODO()).Error()
+	if err != nil {
+		glog.Error("navlinks resource not available: ", err)
+		return
+	}
 
-	_, err = clientset.Navlinks().Create(context.TODO(), &nav, metav1.CreateOptions{})
+	// create navlink resource prometheus-operated
+	navPrometheus := createNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID))
+	_, err = clientset.Navlinks().Create(context.TODO(), &navPrometheus, metav1.CreateOptions{})
 
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			glog.Error("navlinks already exists for ", ns)
+			glog.Error("navlinks prometheus already exists for ", ns)
 			return
 		}
 		glog.Errorf("error creating navlinks: %v", err)
 		return
 	}
+	glog.Error("navlinks create done", navPrometheus.Name)
 
-	//createNavlinks(ns, "alertmanager-operated", "9093")
-	//createNavlinks(ns, "prometheus-monitoring-grafana", "80")
-	glog.Error("navlinks create done", nav)
+	// create navlink resource alertmanager-operated
+	navAlertManager := createNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID))
+	_, err = clientset.Navlinks().Create(context.TODO(), &navAlertManager, metav1.CreateOptions{})
+
+	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			glog.Error("navlinks alertmanager already exists for ", ns)
+			return
+		}
+		glog.Errorf("error creating navlinks: %v", err)
+		return
+	}
+	glog.Error("navlinks create done", navAlertManager.Name)
+
+	// create navlink resource prometheus-monitoring-grafana
+	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafan", "80", string(arRequest.Request.UID))
+	_, err = clientset.Navlinks().Create(context.TODO(), &navGrafana, metav1.CreateOptions{})
+
+	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			glog.Error("navlinks grafana already exists for ", ns)
+			return
+		}
+		glog.Errorf("error creating navlinks: %v", err)
+		return
+	}
+	glog.Error("navlinks create done", navGrafana.Name)
 
 	resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create", &arRequest))
 	if err != nil {
@@ -155,54 +173,4 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 	}
 	return
-}
-
-func createNavlinks(namespace string, service string, port string, uid string) uiv1.NavLink {
-	return uiv1.NavLink{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "monitoring-" + namespace,
-			Namespace: namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "monitoring.coreos.com/v1",
-					Kind:               "Prometheus",
-					Name:               "valinkswebhook",
-					UID:                types.UID(uid),
-					Controller:         &owner,
-					BlockOwnerDeletion: &owner,
-				},
-			},
-		},
-		Spec: uiv1.NavLinkSpec{
-			Target: "_blank",
-			Group:  "monitoring-" + namespace,
-			ToService: &uiv1.NavLinkTargetService{
-				Namespace: namespace,
-				Name:      service,
-				Scheme:    "http",
-				Port:      &intstr.IntOrString{Type: intstr.String, StrVal: port},
-				Path:      "",
-			},
-			//Icon: prometheus,
-		},
-	}
-}
-
-// Template for AdmissionReview
-func admissionResponse(admissionCode int32, admissionPermissions bool, admissionStatus string, admissionMessage string, ar *v1.AdmissionReview) v1.AdmissionReview {
-	return v1.AdmissionReview{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       admissionKind,
-			APIVersion: admissionApi,
-		},
-		Response: &v1.AdmissionResponse{
-			Allowed: admissionPermissions,
-			UID:     ar.Request.UID,
-			Result: &metav1.Status{
-				Status:  admissionStatus,
-				Message: admissionMessage,
-				Code:    admissionCode,
-			},
-		},
-	}
 }
