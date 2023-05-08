@@ -149,7 +149,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	glog.Info("navlinks created: ", navAlertManager.Name)
 
 	// create navlink resource prometheus-monitoring-grafana
-	navGrafana := createNavlinks(ns, "prometheus-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
+	navGrafana := createNavlinks(ns, "project-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
 	_, err = clientset.Navlinks().Create(context.TODO(), &navGrafana, metav1.CreateOptions{})
 
 	if err != nil {
