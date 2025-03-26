@@ -69,6 +69,11 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
+networkPolicy:
+  # whether to enable a hardened network policy for the pod
+  # to only allow ingress
+  enabled: true
+
 nodeSelector: {}
 
 tolerations: []

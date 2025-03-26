@@ -1,0 +1,18 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-target-port
+  labels:
+    {{- include "navlinkswebhook.labels" . | nindent 4 }}
+spec:
+  podSelector:
+      matchLabels:
+          {{- include "navlinkswebhook.labels" . | nindent 8 }}
+  policyTypes:
+      - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: {{ .Values.service.targetPort }}
+{{- end }}
